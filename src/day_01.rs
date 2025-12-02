@@ -42,11 +42,10 @@ fn parse_instructions(input: &str) -> IResult<&str, Vec<Instruction>> {
     Ok((input, instructions))
 }
 
-fn part_1(_instructions: Vec<Instruction>) -> usize {
+fn part_1(instructions: &Vec<Instruction>) -> usize {
     let mut pointer: isize = 50;
     let mut counter = 0;
-    for instr in _instructions {
-        println!("{:?}", instr);
+    for instr in instructions {
         match instr.direction {
             Direction::Left => {
                 pointer -= instr.distance;
@@ -59,22 +58,40 @@ fn part_1(_instructions: Vec<Instruction>) -> usize {
         if pointer == 0 {
             counter += 1;
         }
-        println!("pointer:{pointer}    counter: {counter}");
     }
 
     counter
 }
 
-fn part_2() -> usize {
-    0
+fn part_2(instructions: &Vec<Instruction>) -> usize {
+    let mut pointer: isize = 50;
+    let mut counter = 0;
+    for instr in instructions {
+        for _ in 0..instr.distance {
+            match instr.direction {
+                Direction::Left => {
+                    pointer -= 1;
+                }
+                Direction::Right => {
+                    pointer += 1;
+                }
+            }
+            pointer = pointer.rem_euclid(100);
+            if pointer == 0 {
+                counter += 1;
+            }
+        }
+    }
+
+    counter
 }
 
 pub fn solve() -> SolverResult {
     let instructions = include_str!("../inputs/day_01.txt");
     let (_, parsed) = parse_instructions(instructions)?;
 
-    println!("Part 1: {}", part_1(parsed));
-    println!("Part 2: {}", part_2());
+    println!("Part 1: {}", part_1(&parsed));
+    println!("Part 2: {}", part_2(&parsed));
 
     Ok(())
 }
@@ -99,6 +116,12 @@ L82
     #[test]
     fn test_part_1_example() {
         let (_, instructions) = parse_instructions(EXAMPLE).unwrap();
-        assert_eq!(part_1(instructions), 3);
+        assert_eq!(part_1(&instructions), 3);
+    }
+
+    #[test]
+    fn test_part_2_example() {
+        let (_, instructions) = parse_instructions(EXAMPLE).unwrap();
+        assert_eq!(part_2(&instructions), 6);
     }
 }
