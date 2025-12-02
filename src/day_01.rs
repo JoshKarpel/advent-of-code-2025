@@ -4,35 +4,19 @@ use nom::character::complete::{isize, multispace0};
 use nom::multi::separated_list1;
 use nom::{bytes::complete::tag, IResult, Parser};
 
-#[derive(Debug)]
-enum Direction {
-    Left,
-    Right,
-}
-
-#[derive(Debug)]
-struct Instruction {
-    direction: Direction,
-    distance: isize,
-}
+type Instruction = isize;
 
 fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
-    let (input, dir) = alt((tag("L"), tag("R"))).parse(input)?;
+    let (input, direction) = alt((tag("L"), tag("R"))).parse(input)?;
     let (input, distance) = isize(input)?;
 
-    let direction = match dir {
-        "L" => Direction::Left,
-        "R" => Direction::Right,
+    let signed_distance = match direction {
+        "L" => -distance,
+        "R" => distance,
         _ => unreachable!(),
     };
 
-    Ok((
-        input,
-        Instruction {
-            direction,
-            distance,
-        },
-    ))
+    Ok((input, signed_distance))
 }
 
 fn parse_instructions(input: &str) -> IResult<&str, Vec<Instruction>> {
@@ -46,15 +30,7 @@ fn part_1(instructions: &Vec<Instruction>) -> usize {
     let mut pointer: isize = 50;
     let mut counter = 0;
     for instr in instructions {
-        match instr.direction {
-            Direction::Left => {
-                pointer -= instr.distance;
-            }
-            Direction::Right => {
-                pointer += instr.distance;
-            }
-        }
-        pointer = pointer.rem_euclid(100);
+        pointer = (pointer + instr).rem_euclid(100);
         if pointer == 0 {
             counter += 1;
         }
@@ -67,16 +43,10 @@ fn part_2(instructions: &Vec<Instruction>) -> usize {
     let mut pointer: isize = 50;
     let mut counter = 0;
     for instr in instructions {
-        for _ in 0..instr.distance {
-            match instr.direction {
-                Direction::Left => {
-                    pointer -= 1;
-                }
-                Direction::Right => {
-                    pointer += 1;
-                }
-            }
-            pointer = pointer.rem_euclid(100);
+        // Could be more clever here, but oh well
+        let sgn = instr.signum();
+        for _ in 0..instr.abs() {
+            pointer = (pointer + sgn).rem_euclid(100);
             if pointer == 0 {
                 counter += 1;
             }
