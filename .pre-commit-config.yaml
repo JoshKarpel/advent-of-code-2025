@@ -23,6 +23,10 @@ repos:
       - id: fmt
       - id: cargo-check
       - id: clippy
+        args:
+          - --fix
+          - --allow-dirty
+          - --allow-staged
 
 ci:
-  skip: [fmt, cargo-check, clippy]
+  skip: [ fmt, cargo-check, clippy ]

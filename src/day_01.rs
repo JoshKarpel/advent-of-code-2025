@@ -1,12 +1,12 @@
-use crate::utils::SolverResult;
+use crate::utils::{lines1, SolverResult};
 use nom::branch::alt;
-use nom::character::complete::{isize, multispace0};
-use nom::multi::separated_list1;
+use nom::character::complete::isize;
+use nom::combinator::all_consuming;
 use nom::{bytes::complete::tag, IResult, Parser};
 
 type Instruction = isize;
 
-fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
+fn instruction(input: &str) -> IResult<&str, Instruction> {
     let (input, direction) = alt((tag("L"), tag("R"))).parse(input)?;
     let (input, distance) = isize(input)?;
 
@@ -20,10 +20,7 @@ fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
 }
 
 fn parse_instructions(input: &str) -> IResult<&str, Vec<Instruction>> {
-    let (input, _) = multispace0(input)?;
-    let (input, instructions) = separated_list1(multispace0, parse_instruction).parse(input)?;
-
-    Ok((input, instructions))
+    all_consuming(lines1(instruction)).parse(input)
 }
 
 fn part_1(instructions: &Vec<Instruction>) -> usize {
@@ -57,8 +54,8 @@ fn part_2(instructions: &Vec<Instruction>) -> usize {
 }
 
 pub fn solve() -> SolverResult {
-    let instructions = include_str!("../inputs/day_01.txt");
-    let (_, parsed) = parse_instructions(instructions)?;
+    let input = include_str!("../inputs/day_01.txt");
+    let (_, parsed) = parse_instructions(input)?;
 
     println!("Part 1: {}", part_1(&parsed));
     println!("Part 2: {}", part_2(&parsed));
