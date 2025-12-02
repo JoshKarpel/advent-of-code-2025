@@ -3,6 +3,7 @@ use nom::branch::alt;
 use nom::character::complete::isize;
 use nom::combinator::all_consuming;
 use nom::{bytes::complete::tag, IResult, Parser};
+use std::fs::read_to_string;
 
 type Instruction = isize;
 
@@ -57,8 +58,8 @@ fn part_2(instructions: &Vec<Instruction>) -> isize {
 }
 
 pub fn solve() -> SolverResult {
-    let input = include_str!("../inputs/day_01.txt");
-    let (_, parsed) = parse_instructions(input)?;
+    let input = read_to_string("../inputs/day_01.txt")?;
+    let (_, parsed) = parse_instructions(&input).map_err(|e| e.to_string())?;
 
     println!("Part 1: {}", part_1(&parsed));
     println!("Part 2: {}", part_2(&parsed));
