@@ -1,4 +1,4 @@
-use crate::utils::{lines1, SolverResult};
+use crate::utils::{lines1, whitespace_surrounded, SolverResult};
 use nom::branch::alt;
 use nom::character::complete::isize;
 use nom::combinator::all_consuming;
@@ -20,14 +20,17 @@ fn instruction(input: &str) -> IResult<&str, Instruction> {
 }
 
 fn parse_instructions(input: &str) -> IResult<&str, Vec<Instruction>> {
-    all_consuming(lines1(instruction)).parse(input)
+    all_consuming(whitespace_surrounded(lines1(instruction))).parse(input)
 }
 
+const INITIAL_POINTER: isize = 50;
+const DIAL_SIZE: isize = 100;
+
 fn part_1(instructions: &Vec<Instruction>) -> usize {
-    let mut pointer: isize = 50;
+    let mut pointer: isize = INITIAL_POINTER;
     let mut counter = 0;
     for instr in instructions {
-        pointer = (pointer + instr).rem_euclid(100);
+        pointer = (pointer + instr).rem_euclid(DIAL_SIZE);
         if pointer == 0 {
             counter += 1;
         }
@@ -36,14 +39,14 @@ fn part_1(instructions: &Vec<Instruction>) -> usize {
     counter
 }
 
-fn part_2(instructions: &Vec<Instruction>) -> usize {
-    let mut pointer: isize = 50;
+fn part_2(instructions: &Vec<Instruction>) -> isize {
+    let mut pointer: isize = INITIAL_POINTER;
     let mut counter = 0;
     for instr in instructions {
         // Could be more clever here, but oh well
         let sgn = instr.signum();
         for _ in 0..instr.abs() {
-            pointer = (pointer + sgn).rem_euclid(100);
+            pointer = (pointer + sgn).rem_euclid(DIAL_SIZE);
             if pointer == 0 {
                 counter += 1;
             }

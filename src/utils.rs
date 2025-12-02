@@ -22,5 +22,5 @@ pub fn lines1<'a, O, E: ParseError<&'a str>, F>(
 where
     F: Parser<&'a str, Output = O, Error = E>,
 {
-    whitespace_surrounded(separated_list1(multispace1, inner))
+    separated_list1(multispace1, inner)
 }

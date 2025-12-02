@@ -8,7 +8,6 @@ prep:
 
 default := 'check'
 watch cmd=default:
-    mkdir -p inputs/
     uvx watchfiles --verbosity warning 'just {{cmd}}' src/ inputs/ justfile
 
 alias w := watch
