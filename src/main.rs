@@ -81,12 +81,9 @@ fn download_input(day: &str) -> Result<(), Box<dyn Error>> {
         .error_for_status()?;
     let input = response.text()?;
 
-    let path = format!("data/day_{}.txt", day);
-    create_dir_all("data")?;
-    let mut file = File::options()
-        .write(true)
-        .create_new(true)
-        .open(path.clone())?;
+    let path = format!("inputs/day_{}.txt", day);
+    create_dir_all("inputs")?;
+    let mut file = File::options().write(true).open(path.clone())?;
     file.write_all(input.as_bytes())?;
 
     println!("Wrote input for day {} to {}", day, path);
