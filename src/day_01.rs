@@ -58,7 +58,7 @@ fn part_2(instructions: &Vec<Instruction>) -> isize {
 }
 
 pub fn solve() -> SolverResult {
-    let input = read_to_string("../inputs/day_01.txt")?;
+    let input = read_to_string("inputs/day_01.txt")?;
     let (_, parsed) = parse_instructions(&input).map_err(|e| e.to_string())?;
 
     println!("Part 1: {}", part_1(&parsed));
