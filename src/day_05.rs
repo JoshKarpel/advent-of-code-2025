@@ -1,4 +1,5 @@
 use crate::utils::{lines1, whitespace_surrounded, SolverResult};
+use itertools::Itertools;
 use nom::bytes::complete::tag;
 use nom::character::complete::multispace1;
 use nom::character::complete::usize;
@@ -47,8 +48,29 @@ fn part_1(db: &Database) -> usize {
         .count()
 }
 
+fn collapse_ranges(ranges: Vec<RangeInclusive<usize>>) -> Vec<RangeInclusive<usize>> {
+    ranges
+        .iter()
+        .sorted_by_key(|range| range.start())
+        .fold(vec![], |mut acc, range| {
+            if let Some(last) = acc.last_mut() {
+                if range.start() <= last.end() {
+                    *last = *last.start()..=*range.end().max(last.end());
+                } else {
+                    acc.push(range.clone());
+                }
+            } else {
+                acc.push(range.clone());
+            }
+            acc
+        })
+}
+
 fn part_2(db: &Database) -> usize {
-    0
+    collapse_ranges(db.ranges.clone())
+        .iter()
+        .map(|r| r.end() - r.start() + 1)
+        .sum()
 }
 
 pub fn solve() -> SolverResult {
@@ -91,5 +113,12 @@ mod tests {
         let (_, db) = parse_input(EXAMPLE).unwrap();
 
         assert_eq!(part_1(&db), 3)
+    }
+
+    #[test]
+    fn test_part_2_example() {
+        let (_, db) = parse_input(EXAMPLE).unwrap();
+
+        assert_eq!(part_2(&db), 14)
     }
 }
