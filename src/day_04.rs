@@ -1,16 +1,18 @@
 use crate::utils::SolverResult;
-use itertools::Itertools;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs::read_to_string;
+use std::ops::Sub;
 
-type PaperGrid = HashMap<(isize, isize), bool>;
+type PaperGrid = HashSet<(isize, isize)>;
 
 fn parse_input(input: &str) -> PaperGrid {
     let mut grid = PaperGrid::new();
 
     for (y, line) in input.lines().enumerate() {
         for (x, ch) in line.chars().enumerate() {
-            grid.insert((x as isize, y as isize), ch == '@');
+            if ch == '@' {
+                grid.insert((x as isize, y as isize));
+            }
         }
     }
 
@@ -31,35 +33,33 @@ const DX_DY: [(isize, isize); 8] = [
 fn count_occupied_neighbours(grid: &PaperGrid, (x, y): &(isize, isize)) -> usize {
     DX_DY
         .iter()
-        .filter(|(dx, dy)| *grid.get(&(x + dx, y + dy)).unwrap_or(&false))
+        .filter(|(dx, dy)| grid.contains(&(x + dx, y + dy)))
         .count()
 }
 
 fn part_1(grid: &PaperGrid) -> usize {
     grid.iter()
-        .filter(|(xy, occupied)| **occupied && count_occupied_neighbours(grid, xy) < 4)
+        .filter(|&xy| count_occupied_neighbours(grid, xy) < 4)
         .count()
 }
 
 fn part_2(grid: &PaperGrid) -> usize {
-    let initial_occupied = grid.iter().filter(|(_xy, occupied)| **occupied).count();
+    let initial_occupied = grid.len();
     let mut grid = grid.clone();
     loop {
-        let removed_rolls = grid
+        let removed_rolls: PaperGrid = grid
             .iter()
-            .filter_map(|(xy, occupied)| {
-                (*occupied && count_occupied_neighbours(&grid, xy) < 4).then_some((*xy, false))
-            })
-            .collect_vec();
+            .filter_map(|xy| (count_occupied_neighbours(&grid, xy) < 4).then_some(*xy))
+            .collect();
 
         if removed_rolls.is_empty() {
             break;
         } else {
-            grid.extend(removed_rolls);
+            grid = grid.sub(&removed_rolls);
         }
     }
 
-    initial_occupied - grid.iter().filter(|(_xy, occupied)| **occupied).count()
+    initial_occupied - grid.len()
 }
 
 pub fn solve() -> SolverResult {
