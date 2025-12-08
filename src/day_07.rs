@@ -1,6 +1,6 @@
 use crate::utils::SolverResult;
 use itertools::Itertools;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::read_to_string;
 
 type Splitters = HashSet<usize>;
@@ -55,8 +55,41 @@ fn part_1(start: &Tachyons, splitters: &Vec<Splitters>) -> usize {
     splits
 }
 
-fn part_2(_start: &Tachyons, _splitters: &Vec<Splitters>) -> usize {
-    0
+fn paths_below(
+    tachyon: usize,
+    depth: usize,
+    splitters: &Vec<Splitters>,
+    memo: &mut HashMap<(usize, usize), usize>,
+) -> usize {
+    if let Some(&cached) = memo.get(&(tachyon, depth)) {
+        return cached;
+    }
+
+    if depth >= splitters.len() {
+        return 1;
+    }
+
+    let current_splitters = &splitters[depth];
+    let result = if current_splitters.contains(&tachyon) {
+        let left_paths = paths_below(tachyon - 1, depth + 1, splitters, memo);
+        let right_paths = paths_below(tachyon + 1, depth + 1, splitters, memo);
+        left_paths + right_paths
+    } else {
+        paths_below(tachyon, depth + 1, splitters, memo)
+    };
+
+    memo.insert((tachyon, depth), result);
+
+    result
+}
+
+fn part_2(start: &Tachyons, splitters: &Vec<Splitters>) -> usize {
+    paths_below(
+        *start.iter().next().unwrap(),
+        0,
+        splitters,
+        &mut HashMap::new(),
+    )
 }
 
 pub fn solve() -> SolverResult {
