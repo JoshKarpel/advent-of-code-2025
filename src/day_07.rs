@@ -1,16 +1,103 @@
 use crate::utils::SolverResult;
+use itertools::Itertools;
+use std::collections::{HashMap, HashSet};
+use std::fs::read_to_string;
 
-fn part_1() -> usize {
-    0
+type Splitters = HashSet<usize>;
+type Tachyons = HashSet<usize>;
+
+fn parse_input(input: &str) -> (Vec<Splitters>, Tachyons) {
+    let mut lines = input.lines();
+
+    let mut tachyons = Tachyons::new();
+    tachyons.insert(lines.next().unwrap().find("S").unwrap());
+
+    let splitters: Vec<Splitters> = lines
+        .map(|line| {
+            line.chars()
+                .enumerate()
+                .filter_map(|(i, ch)| (ch == '^').then_some(i))
+                .collect()
+        })
+        .filter(|s: &Splitters| !s.is_empty())
+        .collect_vec();
+
+    (splitters, tachyons)
 }
 
-fn part_2() -> usize {
-    0
+fn advance(current: &Tachyons, splitters: &Splitters) -> (Tachyons, usize) {
+    let mut next = Tachyons::new();
+    let mut splits = 0;
+
+    for &pos in current {
+        if splitters.contains(&pos) {
+            // No need to worry about the ends, the grid is always wide enough
+            next.insert(pos - 1);
+            next.insert(pos + 1);
+            splits += 1;
+        } else {
+            next.insert(pos);
+        }
+    }
+
+    (next, splits)
+}
+
+fn part_1(start: &Tachyons, splitters: &Vec<Splitters>) -> usize {
+    let (_last, splits) =
+        splitters
+            .iter()
+            .fold((start.clone(), 0), |(current, splits), splitters| {
+                let (next, new_splits) = advance(&current, splitters);
+                (next, splits + new_splits)
+            });
+
+    splits
+}
+
+fn paths_below(
+    tachyon: usize,
+    depth: usize,
+    splitters: &Vec<Splitters>,
+    memo: &mut HashMap<(usize, usize), usize>,
+) -> usize {
+    if let Some(&cached) = memo.get(&(tachyon, depth)) {
+        return cached;
+    }
+
+    if depth >= splitters.len() {
+        return 1;
+    }
+
+    let current_splitters = &splitters[depth];
+    let result = if current_splitters.contains(&tachyon) {
+        let left_paths = paths_below(tachyon - 1, depth + 1, splitters, memo);
+        let right_paths = paths_below(tachyon + 1, depth + 1, splitters, memo);
+        left_paths + right_paths
+    } else {
+        paths_below(tachyon, depth + 1, splitters, memo)
+    };
+
+    memo.insert((tachyon, depth), result);
+
+    result
+}
+
+fn part_2(start: &Tachyons, splitters: &Vec<Splitters>) -> usize {
+    paths_below(
+        *start.iter().next().unwrap(),
+        0,
+        splitters,
+        &mut HashMap::new(),
+    )
 }
 
 pub fn solve() -> SolverResult {
-    println!("Part 1: {}", part_1());
-    println!("Part 2: {}", part_2());
+    let input = read_to_string("inputs/day_07.txt")?;
+    let (splitters, start) = parse_input(&input);
+
+    println!("Part 1: {}", part_1(&start, &splitters));
+    println!("Part 2: {}", part_2(&start, &splitters));
 
     Ok(())
 }
@@ -18,4 +105,36 @@ pub fn solve() -> SolverResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const EXAMPLE: &str = "\
+.......S.......
+...............
+.......^.......
+...............
+......^.^......
+...............
+.....^.^.^.....
+...............
+....^.^...^....
+...............
+...^.^...^.^...
+...............
+..^...^.....^..
+...............
+.^.^.^.^.^...^.
+...............";
+
+    #[test]
+    fn test_part_1_example() {
+        let (splitters, start) = parse_input(EXAMPLE);
+
+        assert_eq!(part_1(&start, &splitters), 21);
+    }
+
+    #[test]
+    fn test_part_2_example() {
+        let (splitters, start) = parse_input(EXAMPLE);
+
+        assert_eq!(part_2(&start, &splitters), 40);
+    }
 }
