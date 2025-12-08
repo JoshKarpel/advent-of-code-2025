@@ -2,10 +2,6 @@
 
 default: check
 
-prep:
-   mkdir -p inputs/
-   @bash -c 'touch inputs/day_{01,02,03,04,05,06,07,08,09,10,11,12}.txt'
-
 default := 'check'
 watch cmd=default:
     uvx watchfiles --verbosity warning 'just {{cmd}}' src/ inputs/ justfile
@@ -26,7 +22,7 @@ check:
 alias c := check
 
 test:
-    cargo test
+    cargo test --config 'build.warnings="allow"' -Z warnings
 
 alias t := test
 
