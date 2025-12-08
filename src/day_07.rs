@@ -31,7 +31,7 @@ fn advance(current: &Tachyons, splitters: &Splitters) -> (Tachyons, usize) {
 
     for &pos in current {
         if splitters.contains(&pos) {
-            // No need to worry about wrapping
+            // No need to worry about the ends, the grid is always wide enough
             next.insert(pos - 1);
             next.insert(pos + 1);
             splits += 1;
