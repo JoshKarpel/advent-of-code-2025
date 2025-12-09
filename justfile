@@ -22,7 +22,7 @@ check:
 alias c := check
 
 test:
-    cargo test --config 'build.warnings="allow"' -Z warnings
+    cargo test
 
 alias t := test
 
