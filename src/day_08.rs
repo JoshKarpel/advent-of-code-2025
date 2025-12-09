@@ -55,8 +55,40 @@ fn part_1(junctions: &Vec<Junction>, num_connections: usize) -> usize {
     circuits.values().counts().values().k_largest(3).product()
 }
 
-fn part_2() -> usize {
-    0
+fn part_2(junctions: &Vec<Junction>) -> usize {
+    let distances = junctions
+        .iter()
+        .tuple_combinations()
+        .filter_map(|(a, b)| (a != b).then_some(((a, b), distance(a, b))))
+        .sorted_by(|&(_, d1), &(_, d2)| d1.total_cmp(&d2))
+        .collect_vec();
+
+    let mut circuits: HashMap<Junction, usize> = junctions
+        .clone()
+        .into_iter()
+        .enumerate()
+        .map(|(j, i)| (i, j))
+        .collect();
+
+    distances
+        .iter()
+        .fold_while(0, |_, ((a, b), _)| {
+            let circuit_a = *circuits.get(a).unwrap();
+            let circuit_b = *circuits.get(b).unwrap();
+
+            for (_, circuit) in circuits.iter_mut() {
+                if *circuit == circuit_b {
+                    *circuit = circuit_a;
+                }
+            }
+
+            if circuits.values().all_equal() {
+                itertools::FoldWhile::Done(a.x * b.x)
+            } else {
+                itertools::FoldWhile::Continue(0)
+            }
+        })
+        .into_inner()
 }
 
 pub fn solve() -> SolverResult {
@@ -64,7 +96,7 @@ pub fn solve() -> SolverResult {
     let (_, junctions) = junctions(&input).unwrap();
 
     println!("Part 1: {}", part_1(&junctions, 1000));
-    println!("Part 2: {}", part_2());
+    println!("Part 2: {}", part_2(&junctions));
 
     Ok(())
 }
@@ -100,5 +132,12 @@ mod tests {
         let (_, junctions) = junctions(EXAMPLE).unwrap();
 
         assert_eq!(part_1(&junctions, 10), 40);
+    }
+
+    #[test]
+    fn test_part_2_example() {
+        let (_, junctions) = junctions(EXAMPLE).unwrap();
+
+        assert_eq!(part_2(&junctions), 25272);
     }
 }
