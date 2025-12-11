@@ -27,7 +27,17 @@ fn rectangle_points((x1, y1): Point, (x2, y2): Point) -> impl Iterator<Item = Po
     (x1..=x2).cartesian_product(y1..=y2)
 }
 
-fn horizontal_ray_intersects_side((px, py): Point, (x1, y1): Point, (x2, y2): Point) -> bool {
+fn rectangle_perimeter_points((x1, y1): Point, (x2, y2): Point) -> impl Iterator<Item = Point> {
+    let [x1, x2] = minmax(x1, x2);
+    let [y1, y2] = minmax(y1, y2);
+
+    let top_bottom = (x1..=x2).flat_map(move |x| vec![(x, y1), (x, y2)]);
+    let left_right = (y1..=y2).flat_map(move |y| vec![(x1, y), (x2, y)]);
+
+    top_bottom.chain(left_right)
+}
+
+fn right_horizontal_ray_intersects_side((px, py): Point, (x1, y1): Point, (x2, y2): Point) -> bool {
     let [x1, x2] = minmax(x1, x2);
     let [y1, y2] = minmax(y1, y2);
 
@@ -35,6 +45,22 @@ fn horizontal_ray_intersects_side((px, py): Point, (x1, y1): Point, (x2, y2): Po
     (x1 == x2 && px <= x1 && py >= y1 && py <= y2)
         // Horizontal ray to the right intersects horizontal side
         || (y1 == y2 && py == y1 && px <= x2)
+}
+
+fn is_inside(p: Point, sides: &[(Point, Point)]) -> bool {
+    sides
+        .iter()
+        // TODO: am I counting corners right?
+        .inspect(|&&(a, b)| {
+            if right_horizontal_ray_intersects_side(p, a, b) {
+                println!("Ray from {:?} intersects side {:?}-{:?}", p, a, b);
+            } else {
+                println!("Ray from {:?} does NOT intersect side {:?}-{:?}", p, a, b);
+            }
+        })
+        .filter(|&&(a, b)| right_horizontal_ray_intersects_side(p, a, b))
+        .count()
+        .is_odd()
 }
 
 fn part_1(red_tiles: &Tiles) -> usize {
@@ -47,7 +73,7 @@ fn part_1(red_tiles: &Tiles) -> usize {
 }
 
 fn part_2(red_tiles: &Tiles) -> usize {
-    let red_or_green_boundaries = red_tiles
+    let _red_or_green_boundaries = red_tiles
         .iter()
         .chain(once(red_tiles.first().unwrap()))
         .tuple_windows()
@@ -71,32 +97,14 @@ fn part_2(red_tiles: &Tiles) -> usize {
         .map(|(&a, &b)| (a, b))
         .collect_vec();
 
-    let ((x_min, x_max), (y_min, y_max)) = red_tiles.iter().fold(
-        ((usize::MAX, usize::MIN), (usize::MAX, usize::MIN)),
-        |((x_min, x_max), (y_min, y_max)), &(x, y)| {
-            ((x_min.min(x), x_max.max(x)), (y_min.min(y), y_max.max(y)))
-        },
-    );
-
-    let mut red_or_green_tiles = red_or_green_boundaries.clone();
-    for y in y_min - 1..=y_max + 1 {
-        println!("{y}");
-        for x in x_min - 1..=x_max + 1 {
-            let crossings = sides
-                .iter()
-                .filter(|&&(a, b)| horizontal_ray_intersects_side((x, y), a, b))
-                .count();
-
-            if crossings.is_odd() {
-                red_or_green_tiles.insert((x, y));
-            }
-        }
-    }
-
     red_tiles
         .iter()
         .tuple_combinations()
-        .filter(|(&a, &b)| rectangle_points(a, b).all(|point| red_or_green_tiles.contains(&point)))
+        .filter(|(&a, &b)| {
+            println!("Checking rectangle {:?} to {:?}", a, b);
+            println!("{:?}", rectangle_perimeter_points(a, b).collect_vec());
+            rectangle_perimeter_points(a, b).all(|p| is_inside(p, &sides))
+        })
         .map(|(&a, &b)| rectangle_area(a, b))
         .max()
         .unwrap()
