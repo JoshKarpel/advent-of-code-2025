@@ -6,6 +6,7 @@ use nom::multi::separated_list1;
 use nom::sequence::delimited;
 use nom::Parser;
 use nom::{bytes, IResult};
+use std::collections::HashSet;
 
 type Indicators = Vec<bool>;
 type Button = Vec<usize>;
@@ -51,25 +52,24 @@ fn machines(input: &str) -> IResult<&str, Vec<Machine>> {
 
 fn find_shortest_sequence_part_1(machine: &Machine) -> usize {
     let mut depth = 0;
+    let mut indicators = HashSet::new();
+    indicators.insert(vec![false; machine.target.len()]);
     loop {
         depth += 1;
 
-        if machine
-            .buttons
+        indicators = indicators
             .iter()
-            .combinations_with_replacement(depth)
-            .any(|buttons| {
-                let mut indicators = vec![false; machine.target.len()];
-
-                for button in buttons {
-                    for &idx in button {
-                        indicators[idx] = !indicators[idx];
-                    }
+            .cartesian_product(machine.buttons.iter())
+            .map(|(old_indicators, button)| {
+                let mut new_indicators = old_indicators.clone();
+                for &idx in button {
+                    new_indicators[idx] = !new_indicators[idx];
                 }
-
-                indicators == machine.target
+                new_indicators
             })
-        {
+            .collect();
+
+        if indicators.contains(&machine.target) {
             return depth;
         }
     }
@@ -81,27 +81,33 @@ fn part_1(machines: &[Machine]) -> usize {
 
 fn find_shortest_sequence_part_2(machine: &Machine) -> usize {
     let mut depth = 0;
+    let mut joltages = HashSet::new();
+    joltages.insert(vec![0usize; machine.joltages.len()]);
     loop {
         depth += 1;
-        println!("{depth}");
 
-        // TODO way too slow, some of the joltages are >100, need to do dynamic programming
-        if machine
-            .buttons
+        println!("{depth} {}", joltages.len());
+        joltages = joltages
             .iter()
-            .combinations_with_replacement(depth)
-            .any(|buttons| {
-                let mut joltages = vec![0usize; machine.target.len()];
-
-                for button in buttons {
-                    for &idx in button {
-                        joltages[idx] += 1;
-                    }
+            .cartesian_product(machine.buttons.iter())
+            .filter_map(|(old_joltages, button)| {
+                let mut new_joltages = old_joltages.clone();
+                for &idx in button {
+                    new_joltages[idx] += 1;
                 }
 
-                joltages == machine.joltages
+                // If we exceed the target joltages,
+                // we can't go back down,
+                // so we can prune this branch.
+                new_joltages
+                    .iter()
+                    .zip(machine.joltages.iter())
+                    .all(|(new_j, target_j)| new_j <= target_j)
+                    .then_some(new_joltages)
             })
-        {
+            .collect();
+
+        if joltages.contains(&machine.joltages) {
             return depth;
         }
     }
