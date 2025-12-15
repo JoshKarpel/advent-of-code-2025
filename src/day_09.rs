@@ -7,7 +7,6 @@ use nom::IResult;
 use nom::Parser;
 use num::Integer;
 use std::cmp::minmax;
-use std::collections::HashSet;
 use std::iter::once;
 
 type Point = (usize, usize);
@@ -37,9 +36,24 @@ fn rectangle_perimeter_points((x1, y1): Point, (x2, y2): Point) -> impl Iterator
     top_bottom.chain(left_right)
 }
 
+fn part_1(red_tiles: &Tiles) -> usize {
+    red_tiles
+        .iter()
+        .tuple_combinations()
+        .filter(|(&a, &b)| a != b)
+        .map(|(&a, &b)| rectangle_area(a, b))
+        .max()
+        .unwrap()
+}
+
 fn right_horizontal_ray_intersects_side((px, py): Point, (x1, y1): Point, (x2, y2): Point) -> bool {
     let [x1, x2] = minmax(x1, x2);
     let [y1, y2] = minmax(y1, y2);
+
+    // Corner case: ray hits corner
+    if (px == x1 && py == y1) || (px == x2 && py == y2) {
+        return false;
+    }
 
     // Horizontal ray to the right intersects vertical side
     (x1 == x2 && px <= x1 && py >= y1 && py <= y2)
@@ -48,7 +62,8 @@ fn right_horizontal_ray_intersects_side((px, py): Point, (x1, y1): Point, (x2, y
 }
 
 fn is_inside(p: Point, sides: &[(Point, Point)]) -> bool {
-    sides
+    println!("is {p:?} inside {sides:?}?");
+    let r = sides
         .iter()
         // TODO: am I counting corners right?
         .inspect(|&&(a, b)| {
@@ -60,36 +75,14 @@ fn is_inside(p: Point, sides: &[(Point, Point)]) -> bool {
         })
         .filter(|&&(a, b)| right_horizontal_ray_intersects_side(p, a, b))
         .count()
-        .is_odd()
-}
+        .is_odd();
 
-fn part_1(red_tiles: &Tiles) -> usize {
-    red_tiles
-        .iter()
-        .tuple_combinations()
-        .map(|(&a, &b)| rectangle_area(a, b))
-        .max()
-        .unwrap()
+    // println!("{r}");
+
+    r
 }
 
 fn part_2(red_tiles: &Tiles) -> usize {
-    let _red_or_green_boundaries = red_tiles
-        .iter()
-        .chain(once(red_tiles.first().unwrap()))
-        .tuple_windows()
-        .fold(HashSet::new(), |mut greens, (&(x1, y1), &(x2, y2))| {
-            // One or the other of these loops will only have one element in it, but whatever
-            let [x1, x2] = minmax(x1, x2);
-            let [y1, y2] = minmax(y1, y2);
-
-            for x in x1..=x2 {
-                for y in y1..=y2 {
-                    greens.insert((x, y));
-                }
-            }
-            greens
-        });
-
     let sides = red_tiles
         .iter()
         .chain(once(red_tiles.first().unwrap()))
@@ -97,17 +90,36 @@ fn part_2(red_tiles: &Tiles) -> usize {
         .map(|(&a, &b)| (a, b))
         .collect_vec();
 
-    red_tiles
-        .iter()
-        .tuple_combinations()
-        .filter(|(&a, &b)| {
-            println!("Checking rectangle {:?} to {:?}", a, b);
-            println!("{:?}", rectangle_perimeter_points(a, b).collect_vec());
-            rectangle_perimeter_points(a, b).all(|p| is_inside(p, &sides))
-        })
-        .map(|(&a, &b)| rectangle_area(a, b))
-        .max()
-        .unwrap()
+    for y in 0..=8 {
+        for x in 0..=13 {
+            let p = (x, y);
+            let is_red = red_tiles.contains(&p);
+            let inside = is_inside(p, &sides);
+            let marker = if is_red {
+                "#"
+            } else if inside {
+                "X"
+            } else {
+                "."
+            };
+            print!("{marker}");
+        }
+        println!();
+    }
+
+    // red_tiles
+    //     .iter()
+    //     .tuple_combinations()
+    //     .filter(|(&a, &b)| {
+    //         // println!("Checking rectangle {:?} to {:?}", a, b);
+    //         // println!("{:?}", rectangle_perimeter_points(a, b).collect_vec());
+    //         rectangle_perimeter_points(a, b).all(|p| is_inside(p, &sides))
+    //     })
+    //     .map(|(&a, &b)| rectangle_area(a, b))
+    //     .max()
+    //     .unwrap()
+
+    0
 }
 
 pub fn solve() -> SolverResult {
