@@ -85,6 +85,7 @@ fn find_shortest_sequence_part_2(machine: &Machine) -> usize {
         depth += 1;
         println!("{depth}");
 
+        // TODO way too slow, some of the joltages are >100, need to do dynamic programming
         if machine
             .buttons
             .iter()
